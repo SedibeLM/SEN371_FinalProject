@@ -1,34 +1,25 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { getAuthUser, logout } from '../utils/storage'
-
-export default function Navbar() {
-  const user = getAuthUser()
-  const nav = useNavigate()
-  function onLogout(){ logout(); nav('/login', { replace:true }) }
-
-  return (
-    <div className="navbar">
-      <div className="container navbar-inner">
-        <div style={{display:'flex', gap:16, alignItems:'center'}}>
-          <strong>CampusLearn</strong>
-          {user && (
-            <Link to={user.role==='TUTOR'?'/dashboard/tutor':'/dashboard/student'}>Dashboard</Link>
-          )}
-        </div>
-        <div style={{display:'flex', gap:12, alignItems:'center'}}>
-          {user ? (
-            <>
-              <span className="badge">{user.role}</span>
-              <button className="btn secondary" onClick={onLogout}>Logout</button>
-            </>
-          ) : (
-            <>
-              <Link to="/login">Login</Link>
-              <Link to="/register">Register</Link>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  )
+import { Link, useNavigate } from "react-router-dom";
+import { getAuthUser, logout } from "../utils/storage";
+export default function Navbar(){
+ const user = getAuthUser();
+ const nav = useNavigate();
+ return (
+<div className="navbar">
+<div className="navbar-inner">
+<div className="brand">
+         Campus<span className="brand-accent">Learn</span>
+</div>
+<div className="nav-actions">
+         {user && (
+<Link className="btn btn-ghost" to={user.role==="TUTOR" ? "/dashboard/tutor" : "/dashboard/student"}>
+             Dashboard
+</Link>
+         )}
+<button className="btn btn-primary" onClick={()=>{ logout(); nav("/login",{replace:true}); }}>
+           Logout
+</button>
+</div>
+</div>
+</div>
+ );
 }

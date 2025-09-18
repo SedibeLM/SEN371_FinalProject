@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getAuthUser, createTopic, listTopics, uploadMaterial } from '../utils/storage'
+import { getMaterials } from '@/utils/storage'
+const list = getMaterials(); // all materials
 
 export default function TutorDashboard(){
   const user = getAuthUser()

@@ -1,45 +1,50 @@
-import { useState } from 'react'
-import { loginUser, getAuthUser } from '../utils/storage'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState } from "react";
 
-export default function Login(){
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [err, setErr] = useState('')
-  const nav = useNavigate()
+import { useNavigate } from "react-router-dom";
 
-  function submit(e){
-    e.preventDefault()
-    try {
-      const user = loginUser(email, password)
-      if (user.role === 'TUTOR') nav('/dashboard/tutor', { replace:true })
-      else nav('/dashboard/student', { replace:true })
-    } catch (e) {
-      setErr(e.message)
+import { loginUser, getAuthUser } from "../utils/storage";
+
+export default function Login() {
+
+  const [email, setEmail] = useState("");
+
+  const [password, setPassword] = useState("");
+
+  const nav = useNavigate();
+
+  function submit(e) {
+
+    e.preventDefault();
+
+    const ok = loginUser(email, password);
+
+    if (ok) {
+
+      const u = getAuthUser();
+
+      nav(u?.role === "TUTOR" ? "/dashboard/tutor" : "/dashboard/student", { replace: true });
+
+    } else {
+
+      alert("Invalid credentials");
+
     }
+
   }
 
-  if (getAuthUser()) return <div className="container"><p>You are already logged in.</p></div>
-
   return (
-    <div className="container" style={{maxWidth:480}}>
-      <h1>Login</h1>
-      <form className="card row" onSubmit={submit}>
-        {err && <div style={{color:'#b91c1c'}}>{err}</div>}
-        <div>
-          <div className="label">Email</div>
-          <input className="input" data-test="login-email" value={email} onChange={e=>setEmail(e.target.value)} />
-        </div>
-        <div>
-          <div className="label">Password</div>
-          <input className="input" data-test="login-password" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
-        </div>
-        <button className="btn" data-test="login-submit">Sign in</button>
-        <div>New user? <Link to="/register">Register</Link></div>
-      </form>
-      <div className="card" style={{marginTop:12, fontSize:13}}>
-        Demo accounts: tutor@demo.com / pass &nbsp;|&nbsp; student@demo.com / pass
-      </div>
-    </div>
-  )
+<div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9f9f9" }}>
+<form onSubmit={submit} style={{ background: "#fff", padding: 20, borderRadius: 8, boxShadow: "0 2px 6px rgba(0,0,0,0.1)" }}>
+<h2>CampusLearn Login</h2>
+<div>Email</div>
+<input value={email} onChange={e => setEmail(e.target.value)} style={{ width: "100%", marginBottom: 10 }} />
+<div>Password</div>
+<input type="password" value={password} onChange={e => setPassword(e.target.value)} style={{ width: "100%", marginBottom: 10 }} />
+<button type="submit" style={{ width: "100%", padding: 8, background: "#007bff", color: "#fff", border: "none", borderRadius: 4 }}>Login</button>
+</form>
+</div>
+
+  );
+
 }
+ 
