@@ -1,0 +1,219 @@
+package com.campuslearn.service;
+
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+public class CampusLearnServicesTest {
+
+    // ===== TopicService =====
+    @Nested
+    class TopicServiceTests {
+        private TopicRepository topicRepository;
+        private TopicService topicService;
+
+        @BeforeEach
+        void setUp() {
+            topicRepository = mock(TopicRepository.class);
+            topicService = new TopicService(topicRepository);
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+            "instructor, OPEN",
+            "admin,      CLOSED"
+        })
+        void createTopic_ValidRolesAndStatuses_Save(String role, String status) {
+            when(topicRepository.existsByTitleAndModuleId("Math", "MOD1")).thenReturn(false);
+
+            String result = topicService.createTopic("Math", "MOD1", status, role);
+
+            assertEquals("Topic created successfully", result);
+            verify(topicRepository).save(any(Topic.class));
+        }
+
+        @Test
+        void createTopic_DuplicateTitle_ThrowsAndNoSave() {
+            when(topicRepository.existsByTitleAndModuleId("Math", "MOD1")).thenReturn(true);
+
+            assertThrows(IllegalArgumentException.class,
+                () -> topicService.createTopic("Math", "MOD1", "OPEN", "instructor"));
+
+            verify(topicRepository, never()).save(any());
+        }
+
+        @Test
+        void createTopic_EmptyTitle_ThrowsAndNoSave() {
+            assertThrows(IllegalArgumentException.class,
+                () -> topicService.createTopic("", "MOD1", "OPEN", "instructor"));
+            verify(topicRepository, never()).save(any());
+        }
+
+        @Test
+        void createTopic_OverMaxTitleLength_ThrowsAndNoSave() {
+            String longTitle = "A".repeat(51);
+            assertThrows(IllegalArgumentException.class,
+                () -> topicService.createTopic(longTitle, "MOD1", "OPEN", "instructor"));
+            verify(topicRepository, never()).save(any());
+        }
+
+        @Test
+        void createTopic_InvalidStatus_ThrowsAndNoSave() {
+            assertThrows(IllegalArgumentException.class,
+                () -> topicService.createTopic("Math", "MOD1", "INVALID", "instructor"));
+            verify(topicRepository, never()).save(any());
+        }
+
+        @Test
+        void createTopic_NoPermission_ThrowsAndNoSave() {
+            assertThrows(IllegalArgumentException.class,
+                () -> topicService.createTopic("Math", "MOD1", "OPEN", "student"));
+            verify(topicRepository, never()).save(any());
+        }
+    }
+
+    // ===== MaterialService =====
+    @Nested
+    class MaterialServiceTests {
+        private MaterialRepository materialRepository;
+        private MaterialService materialService;
+
+        @BeforeEach
+        void setUp() {
+            materialRepository = mock(MaterialRepository.class);
+            materialService = new MaterialService(materialRepository);
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+            "pdf, 0.1, instructor",
+            "mp4, 20.0, admin"
+        })
+        void uploadMaterial_ValidInputs_Save(String type, double size, String role) {
+            String result = materialService.uploadMaterial(type, size, role);
+
+            assertEquals("Material uploaded successfully", result);
+            verify(materialRepository).save(any(Material.class));
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+            "exe, 10.0, instructor",  // invalid type
+            "pdf, 0.0, instructor",   // size zero
+            "pdf, 20.1, instructor",  // over limit
+            "pdf, 10.0, student"      // invalid role
+        })
+        void uploadMaterial_InvalidInputs_ThrowAndNoSave(String type, double size, String role) {
+            assertThrows(IllegalArgumentException.class,
+                () -> materialService.uploadMaterial(type, size, role));
+            verify(materialRepository, never()).save(any());
+        }
+    }
+
+    // ===== SubscriptionService =====
+    @Nested
+    class SubscriptionServiceTests {
+        private SubscriptionRepository subscriptionRepository;
+        private SubscriptionService subscriptionService;
+
+        @BeforeEach
+        void setUp() {
+            subscriptionRepository = mock(SubscriptionRepository.class);
+            subscriptionService = new SubscriptionService(subscriptionRepository);
+        }
+
+        @Test
+        void subscribeStudent_ValidInput_Saves() {
+            when(subscriptionRepository.existsByStudentIdAndCourseId("student1", "course1")).thenReturn(false);
+
+            String result = subscriptionService.subscribeStudent("student1", "course1", "student");
+
+            assertEquals("Subscription successful", result);
+            verify(subscriptionRepository).save(any(Subscription.class));
+        }
+
+        @Test
+        void subscribeStudent_Duplicate_ThrowsAndNoSave() {
+            when(subscriptionRepository.existsByStudentIdAndCourseId("student1", "course1")).thenReturn(true);
+
+            assertThrows(IllegalArgumentException.class,
+                () -> subscriptionService.subscribeStudent("student1", "course1", "student"));
+            verify(subscriptionRepository, never()).save(any());
+        }
+
+        @Test
+        void subscribeStudent_InvalidStudentId_ThrowsAndNoSave() {
+            assertThrows(IllegalArgumentException.class,
+                () -> subscriptionService.subscribeStudent("", "course1", "student"));
+            verify(subscriptionRepository, never()).save(any());
+        }
+
+        @Test
+        void subscribeStudent_InvalidCourseId_ThrowsAndNoSave() {
+            assertThrows(IllegalArgumentException.class,
+                () -> subscriptionService.subscribeStudent("student1", "", "student"));
+            verify(subscriptionRepository, never()).save(any());
+        }
+
+        @Test
+        void subscribeStudent_NonStudentRole_ThrowsAndNoSave() {
+            assertThrows(IllegalArgumentException.class,
+                () -> subscriptionService.subscribeStudent("student1", "course1", "instructor"));
+            verify(subscriptionRepository, never()).save(any());
+        }
+    }
+
+    // ===== MessageService =====
+    @Nested
+    class MessageServiceTests {
+        private MessageRepository messageRepository;
+        private MessageService messageService;
+
+        @BeforeEach
+        void setUp() {
+            messageRepository = mock(MessageRepository.class);
+            messageService = new MessageService(messageRepository);
+        }
+
+        @Test
+        void sendMessage_ValidExistingThread_Saves() {
+            String result = messageService.sendMessage("Hello", "thread1", "user1");
+
+            assertEquals("Message sent successfully", result);
+            verify(messageRepository).save(any(Message.class));
+            verify(messageRepository, never()).createThread();
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void sendMessage_NullOrEmptyThread_AutoCreatesThread(String threadId) {
+            when(messageRepository.createThread()).thenReturn("newThread1");
+
+            String result = messageService.sendMessage("Hello", threadId, "user1");
+
+            assertEquals("Message sent successfully", result);
+            verify(messageRepository).createThread();
+            verify(messageRepository).save(any(Message.class));
+        }
+
+        @Test
+        void sendMessage_EmptyContent_ThrowsAndNoSave() {
+            assertThrows(IllegalArgumentException.class,
+                () -> messageService.sendMessage("", "thread1", "user1"));
+            verify(messageRepository, never()).save(any());
+        }
+
+        @Test
+        void sendMessage_EmptyUserId_ThrowsAndNoSave() {
+            assertThrows(IllegalArgumentException.class,
+                () -> messageService.sendMessage("Hello", "thread1", ""));
+            verify(messageRepository, never()).save(any());
+        }
+    }
+}

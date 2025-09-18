@@ -1,0 +1,204 @@
+package com.campuslearn.service;
+
+import java.util.Arrays;
+import java.util.List;
+
+public class Topic {
+    private String title;
+    private String moduleId;
+    private String status; // OPEN or CLOSED
+
+    public Topic(String title, String moduleId, String status) {
+        this.title = title;
+        this.moduleId = moduleId;
+        this.status = status;
+    }
+
+    // Getters
+    public String getTitle() { return title; }
+    public String getModuleId() { return moduleId; }
+    public String getStatus() { return status; }
+}
+
+public class Material {
+    private String fileType;
+    private double fileSize; // in MB
+    private String uploadedBy;
+
+    public Material(String fileType, double fileSize, String uploadedBy) {
+        this.fileType = fileType;
+        this.fileSize = fileSize;
+        this.uploadedBy = uploadedBy;
+    }
+
+    // Getters
+    public String getFileType() { return fileType; }
+    public double getFileSize() { return fileSize; }
+}
+
+public class Subscription {
+    private String studentId;
+    private String courseId;
+
+    public Subscription(String studentId, String courseId) {
+        this.studentId = studentId;
+        this.courseId = courseId;
+    }
+
+    // Getters
+    public String getStudentId() { return studentId; }
+    public String getCourseId() { return courseId; }
+}
+
+public class Message {
+    private String content;
+    private String threadId;
+
+    public Message(String content, String threadId) {
+        this.content = content;
+        this.threadId = threadId;
+    }
+
+    // Getters
+    public String getContent() { return content; }
+    public String getThreadId() { return threadId; }
+}
+
+public interface TopicRepository {
+    boolean existsByTitleAndModuleId(String title, String moduleId);
+    void save(Topic topic);
+}
+
+public interface MaterialRepository {
+    void save(Material material);
+}
+
+public interface SubscriptionRepository {
+    boolean existsByStudentIdAndCourseId(String studentId, String courseId);
+    void save(Subscription subscription);
+}
+
+public interface MessageRepository {
+    String createThread();
+    void save(Message message);
+}
+
+public class TopicService {
+    private final TopicRepository topicRepository;
+
+    public TopicService(TopicRepository topicRepository) {
+        this.topicRepository = topicRepository;
+    }
+
+    public String createTopic(String title, String moduleId, String status, String userRole) throws IllegalArgumentException {
+        boolean isValidTitle = title != null && !title.isEmpty() && title.length() <= 50;
+        boolean isValidStatus = status.equals("OPEN") || status.equals("CLOSED");
+        boolean hasPermission = userRole.equals("instructor") || userRole.equals("admin");
+
+        if (!isValidTitle) {
+            throw new IllegalArgumentException("Invalid title: must be non-empty and ≤ 50 characters");
+        }
+        if (!isValidStatus) {
+            throw new IllegalArgumentException("Invalid status: must be OPEN or CLOSED");
+        }
+        if (!hasPermission) {
+            throw new IllegalArgumentException("Permission denied: user must be instructor or admin");
+        }
+        if (topicRepository.existsByTitleAndModuleId(title, moduleId)) {
+            throw new IllegalArgumentException("Title already exists in this module");
+        }
+
+        Topic topic = new Topic(title, moduleId, status);
+        topicRepository.save(topic);
+        return "Topic created successfully";
+    }
+}
+
+public class MaterialService {
+    private final MaterialRepository materialRepository;
+    private static final List<String> ALLOWED_TYPES = Arrays.asList("pdf", "mp4");
+    private static final double MAX_SIZE_MB = 20.0;
+
+    public MaterialService(MaterialRepository materialRepository) {
+        this.materialRepository = materialRepository;
+    }
+
+    public String uploadMaterial(String fileType, double fileSize, String userRole) throws IllegalArgumentException {
+        boolean isValidType = ALLOWED_TYPES.contains(fileType.toLowerCase());
+        boolean isValidSize = fileSize > 0 && fileSize <= MAX_SIZE_MB;
+        boolean hasPermission = userRole.equals("instructor") || userRole.equals("admin");
+
+        if (!isValidType) {
+            throw new IllegalArgumentException("Invalid file type: must be pdf or mp4");
+        }
+        if (!isValidSize) {
+            throw new IllegalArgumentException("Invalid file size: must be > 0 and ≤ 20MB");
+        }
+        if (!hasPermission) {
+            throw new IllegalArgumentException("Permission denied: user must be instructor or admin");
+        }
+
+        Material material = new Material(fileType, fileSize, userRole);
+        materialRepository.save(material);
+        return "Material uploaded successfully";
+    }
+}
+
+public class SubscriptionService {
+    private final SubscriptionRepository subscriptionRepository;
+
+    public SubscriptionService(SubscriptionRepository subscriptionRepository) {
+        this.subscriptionRepository = subscriptionRepository;
+    }
+
+    public String subscribeStudent(String studentId, String courseId, String userRole) throws IllegalArgumentException {
+        boolean isValidStudent = studentId != null && !studentId.isEmpty();
+        boolean isValidCourse = courseId != null && !courseId.isEmpty();
+        boolean isStudentRole = userRole.equals("student");
+
+        if (!isValidStudent) {
+            throw new IllegalArgumentException("Invalid student ID");
+        }
+        if (!isValidCourse) {
+            throw new IllegalArgumentException("Invalid course ID");
+        }
+        if (!isStudentRole) {
+            throw new IllegalArgumentException("Only students can subscribe");
+        }
+        if (subscriptionRepository.existsByStudentIdAndCourseId(studentId, courseId)) {
+            throw new IllegalArgumentException("Student already subscribed to this course");
+        }
+
+        Subscription subscription = new Subscription(studentId, courseId);
+        subscriptionRepository.save(subscription);
+        return "Subscription successful";
+    }
+}
+
+public class MessageService {
+    private final MessageRepository messageRepository;
+
+    public MessageService(MessageRepository messageRepository) {
+        this.messageRepository = messageRepository;
+    }
+
+    public String sendMessage(String content, String threadId, String userId) throws IllegalArgumentException {
+        boolean isValidContent = content != null && !content.isEmpty();
+        boolean isValidUser = userId != null && !userId.isEmpty();
+
+        if (!isValidContent) {
+            throw new IllegalArgumentException("Message content cannot be empty");
+        }
+        if (!isValidUser) {
+            throw new IllegalArgumentException("Invalid user ID");
+        }
+
+        if (threadId == null || threadId.isEmpty()) {
+            threadId = messageRepository.createThread();
+        }
+
+        Message message = new Message(content, threadId);
+        messageRepository.save(message);
+        return "Message sent successfully";
+    }
+}
