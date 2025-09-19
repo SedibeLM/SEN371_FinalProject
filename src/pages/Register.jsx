@@ -1,54 +1,31 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { registerUser, loginUser, getAuthUser } from "../utils/storage";
+import { setAuthUser } from "../utils/storage";   // <-- this must exist now
+import { useNavigate } from "react-router-dom";
+
 export default function Register(){
- const [role, setRole] = useState("STUDENT"); // STUDENT or TUTOR
- const [firstName, setFirstName] = useState("");
- const [lastName, setLastName] = useState("");
- const [email, setEmail] = useState("");
- const [password, setPassword] = useState("");
- const nav = useNavigate();
- function submit(e){
-   e.preventDefault();
-   const res = registerUser({ firstName, lastName, email, password, role });
-   if(!res.ok){ alert(res.msg); return; }
-   // Auto-login and send to the right dashboard
-   const ok = loginUser(email, password);
-   if(ok){
-     const u = getAuthUser();
-     nav(u?.role==="TUTOR" ? "/app/tutor" : "/app/student", { replace:true });
-   }
- }
- return (
-<div className="auth-wrap">
-<form className="form" onSubmit={submit} style={{maxWidth:460}}>
-<h1>Create account</h1>
-<div className="grid" style={{gridTemplateColumns:"1fr 1fr", gap:10}}>
-<div>
-<div className="label">First name</div>
-<input className="input" value={firstName} onChange={e=>setFirstName(e.target.value)}/>
-</div>
-<div>
-<div className="label">Last name</div>
-<input className="input" value={lastName} onChange={e=>setLastName(e.target.value)}/>
-</div>
-</div>
-<div className="label">Email</div>
-<input className="input" value={email} onChange={e=>setEmail(e.target.value)} />
-<div className="label">Password</div>
-<input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
-<div className="label">Role</div>
-<select className="input" value={role} onChange={e=>setRole(e.target.value)}>
-<option value="STUDENT">Student</option>
-<option value="TUTOR">Tutor</option>
-</select>
-<div style={{marginTop:14, display:"flex", gap:10, alignItems:"center"}}>
-<button className="btn btn-primary" type="submit">Sign up</button>
-<span style={{fontSize:14}}>
-           Have an account? <Link to="/login" className="link">Sign in</Link>
-</span>
-</div>
-</form>
-</div>
- );
+  const [email,setEmail] = useState("");
+  const [name,setName] = useState("");
+  const nav = useNavigate();
+
+  function submit(e){
+    e.preventDefault();
+    // demo registration: create a student session
+    setAuthUser({ email, role:"STUDENT", name: name || "Student" });
+    nav("/app/overview", { replace:true });
+  }
+
+  return (
+    <div style={{ minHeight:"100vh", display:"grid", placeItems:"center", background:"#f7f9fb" }}>
+      <form onSubmit={submit} style={{ width:380, background:"#fff", border:"1px solid #e5e7eb", borderRadius:12, padding:20 }}>
+        <h1 style={{marginTop:0}}>Create account</h1>
+        <label style={{ fontWeight:700, margin:"10px 0 6px" }}>Name</label>
+        <input style={input} value={name} onChange={e=>setName(e.target.value)} />
+        <label style={{ fontWeight:700, margin:"10px 0 6px" }}>Email</label>
+        <input style={input} value={email} onChange={e=>setEmail(e.target.value)} />
+        <button style={btn} type="submit">Register</button>
+      </form>
+    </div>
+  );
 }
+const input = { width:"100%", padding:"10px 12px", borderRadius:10, border:"1px solid #d1d5db" };
+const btn = { marginTop:14, width:"100%", padding:"10px 12px", borderRadius:10, border:"1px solid #0aa266", background:"#0aa266", color:"#fff", fontWeight:800 };
