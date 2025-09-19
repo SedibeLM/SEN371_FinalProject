@@ -1,81 +1,108 @@
 import { useEffect, useState } from 'react'
-import { getAuthUser, createTopic, listTopics, uploadMaterial } from '../utils/storage'
-import { getMaterials } from '@/utils/storage'
-const list = getMaterials(); // all materials
+import { createTopic, getTopics, uploadMaterial, getModules } from '../utils/storage'
 
 export default function TutorDashboard(){
-  const user = getAuthUser()
-  const [topics, setTopics] = useState([])
-  const [title, setTitle] = useState('')
-  const [moduleCode, setModule] = useState('SEN371')
-  const [type, setType] = useState('PDF')
-  const [topicId, setTopicId] = useState('')
-  const [file, setFile] = useState(null)
-  const [msg, setMsg] = useState('')
+  const [topics, setTopics] = useState([]);
+  const [modules, setModules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState('');
 
-  useEffect(()=>{ setTopics(listTopics()) }, [])
+  // Form states
+  const [title, setTitle] = useState('');
+  const [moduleId, setModuleId] = useState('');
+  const [materialTopicId, setMaterialTopicId] = useState('');
+  const [materialType, setMaterialType] = useState('PDF');
+  const [materialFile, setMaterialFile] = useState(null);
+  const [materialUrl, setMaterialUrl] = useState('');
 
-  function onCreateTopic(){
-    if (!title.trim()) return setMsg('Title required')
-    const t = createTopic({ title, moduleCode, tutorId: user.id })
-    setTopics([t, ...topics]); setTitle(''); setMsg('Topic created')
+  useEffect(()=>{
+    const fetchData = async () => {
+      setLoading(true);
+      const [topicsData, modulesData] = await Promise.all([getTopics(), getModules()]);
+      setTopics(topicsData || []);
+      setModules(modulesData || []);
+      if (modulesData && modulesData.length > 0) {
+        setModuleId(modulesData[0].module_id);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  async function onCreateTopic(){
+    if (!title.trim() || !moduleId) return setMsg('Title and module are required');
+    const res = await createTopic({ title, moduleId: Number(moduleId) });
+    if (res.ok) {
+      setTopics([res.data, ...topics]);
+      setTitle('');
+      setMsg('Topic created successfully');
+    } else {
+      setMsg(`Error: ${res.msg}`);
+    }
   }
 
-  function onUpload(){
-    if (!topicId || !file) return setMsg('Pick topic and file')
-    uploadMaterial({ topicId, type, fileName:file.name, sizeBytes:file.size })
-    setMsg('Material saved'); setFile(null)
+  async function onUpload(){
+    if (!materialTopicId || !materialUrl) return setMsg('Please select a topic and provide a URL');
+    const res = await uploadMaterial({ 
+      topicId: Number(materialTopicId), 
+      kind: materialType, 
+      title: materialUrl, // Using URL as title for simplicity
+      url: materialUrl 
+    });
+    if(res.ok) {
+      setMsg('Material uploaded successfully');
+      setMaterialUrl('');
+    } else {
+      setMsg(`Error: ${res.msg}`);
+    }
+  }
+
+  if (loading) {
+    return <div className="page"><h1>Tutor Dashboard</h1><div>Loading...</div></div>;
   }
 
   return (
-    <div className="container grid" style={{gap:24}}>
+    <div className="page">
       <h1>Tutor Dashboard</h1>
       {msg && <div className="card" style={{background:'#ecfeff', borderColor:'#06b6d4'}}>{msg}</div>}
 
-      <div className="grid" style={{gridTemplateColumns:'1fr 1fr', gap:24}}>
-        <div className="card row">
+      <div className="grid" style={{gridTemplateColumns:'1fr 1fr', gap:24, marginTop: 18}}>
+        <div className="card" style={{display: 'grid', gap: 10}}>
           <h2>Create Topic</h2>
-          <div><div className="label">Title</div><input className="input" data-test="title" value={title} onChange={e=>setTitle(e.target.value)} /></div>
           <div>
             <div className="label">Module</div>
-            <select className="select" data-test="module" value={moduleCode} onChange={e=>setModule(e.target.value)}>
-              <option>SEN371</option><option>SEN372</option>
+            <select className="input" value={moduleId} onChange={e=>setModuleId(e.target.value)}>
+              {modules.map(m => <option key={m.module_id} value={m.module_id}>{m.name}</option>)}
             </select>
           </div>
-          <button className="btn" data-test="create" onClick={onCreateTopic}>Create</button>
+          <div>
+            <div className="label">Title</div>
+            <input className="input" value={title} onChange={e=>setTitle(e.target.value)} />
+          </div>
+          <button className="btn btn-primary" onClick={onCreateTopic}>Create</button>
         </div>
 
-        <div className="card row">
+        <div className="card" style={{display: 'grid', gap: 10}}>
           <h2>Upload Material</h2>
           <div>
             <div className="label">Topic</div>
-            <select className="select" value={topicId} onChange={e=>setTopicId(e.target.value)}>
+            <select className="input" value={materialTopicId} onChange={e=>setMaterialTopicId(e.target.value)}>
               <option value="">Select a topic</option>
-              {topics.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+              {topics.map(t => <option key={t.topic_id} value={t.topic_id}>{t.title}</option>)}
             </select>
           </div>
           <div>
             <div className="label">Type</div>
-            <select className="select" value={type} onChange={e=>setType(e.target.value)}>
-              <option>PDF</option><option>VIDEO</option><option>AUDIO</option><option>QUIZ</option><option>OTHER</option>
+            <select className="input" value={materialType} onChange={e=>setMaterialType(e.target.value)}>
+              <option>PDF</option><option>VIDEO</option><option>AUDIO</option><option>OTHER</option>
             </select>
           </div>
-          <input type="file" data-test="upload-material" onChange={e=>setFile(e.target.files?.[0]||null)} />
-          <button className="btn" onClick={onUpload}>Upload</button>
+           <div>
+            <div className="label">Material URL</div>
+            <input className="input" value={materialUrl} onChange={e=>setMaterialUrl(e.target.value)} placeholder="https://example.com/material.pdf" />
+          </div>
+          <button className="btn btn-primary" onClick={onUpload}>Upload</button>
         </div>
-      </div>
-
-      <div className="grid cols-3">
-        {topics.map(t => (
-          <a key={t.id} href={`/topics/${t.id}`} className="card" data-test="topic-card">
-            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-              <strong>{t.title}</strong> <span className="badge">{t.moduleCode}</span>
-            </div>
-            <div style={{fontSize:12, color:'#64748b', marginTop:8}}>
-              Materials: {t.materials?.length||0}
-            </div>
-          </a>
-        ))}
       </div>
     </div>
   )

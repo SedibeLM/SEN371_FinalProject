@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { registerUser, loginUser, getAuthUser } from "../utils/storage";
+import { registerUser } from "../utils/storage";
+
 export default function Register(){
  const [role, setRole] = useState("STUDENT"); // STUDENT or TUTOR
  const [firstName, setFirstName] = useState("");
@@ -8,17 +9,19 @@ export default function Register(){
  const [email, setEmail] = useState("");
  const [password, setPassword] = useState("");
  const nav = useNavigate();
- function submit(e){
+
+ async function submit(e){
    e.preventDefault();
-   const res = registerUser({ firstName, lastName, email, password, role });
-   if(!res.ok){ alert(res.msg); return; }
-   // Auto-login and send to the right dashboard
-   const ok = loginUser(email, password);
-   if(ok){
-     const u = getAuthUser();
-     nav(u?.role==="TUTOR" ? "/app/tutor" : "/app/student", { replace:true });
+   const res = await registerUser({ firstName, lastName, email, password, role });
+   if(!res.ok){ 
+     alert(res.msg); 
+     return; 
    }
+   // With email confirmation disabled, the user is logged in automatically.
+   // Navigate them directly to the app.
+   nav("/app/overview", { replace:true });
  }
+
  return (
 <div className="auth-wrap">
 <form className="form" onSubmit={submit} style={{maxWidth:460}}>

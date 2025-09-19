@@ -4,6 +4,8 @@ console.log("[MAIN] executing");
 
 document.getElementById('debug')?.insertAdjacentText('beforeend', " → [MAIN]");
 
+import './index.css'
+
 /* React mount */
 
 import React from 'react'

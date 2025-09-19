@@ -1,13 +1,22 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { getAuthUser, logout } from "../utils/storage";
+import { useEffect, useState } from "react";
+
 export default function SidebarLayout(){
- const user = getAuthUser();
+ const [user, setUser] = useState(null);
  const nav = useNavigate();
- if(!user){
-   // no session -> go login
-   nav("/login", { replace:true });
-   return null;
- }
+
+ useEffect(() => {
+   const fetchUser = async () => {
+     const currentUser = await getAuthUser();
+     if (!currentUser) {
+       nav("/login", { replace: true });
+     } else {
+       setUser(currentUser);
+     }
+   };
+   fetchUser();
+ }, [nav]);
  return (
 <div className="shell">
      {/* LEFT SIDEBAR */}

@@ -12,24 +12,16 @@ export default function Login() {
 
   const nav = useNavigate();
 
-  function submit(e) {
-
+async function submit(e) {
     e.preventDefault();
-
-    const ok = loginUser(email, password);
-
+    const ok = await loginUser(email, password);
     if (ok) {
-
-      const u = getAuthUser();
-
-      nav(u?.role === "TUTOR" ? "/dashboard/tutor" : "/dashboard/student", { replace: true });
-
+      // After login, the Supabase client manages the session.
+      // Navigate to the app root, and the AuthGuard will direct the user.
+      nav("/app", { replace: true });
     } else {
-
-      alert("Invalid credentials");
-
+      alert("Login failed. Please check your credentials.");
     }
-
   }
 
   return (
@@ -41,6 +33,9 @@ export default function Login() {
 <div>Password</div>
 <input type="password" value={password} onChange={e => setPassword(e.target.value)} style={{ width: "100%", marginBottom: 10 }} />
 <button type="submit" style={{ width: "100%", padding: 8, background: "#007bff", color: "#fff", border: "none", borderRadius: 4 }}>Login</button>
+<div style={{marginTop: 12, textAlign: 'center', fontSize: 14}}>
+  Don't have an account? <a href="/register" className="link">Sign up</a>
+</div>
 </form>
 </div>
 

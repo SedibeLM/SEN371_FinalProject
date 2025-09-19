@@ -1,8 +1,23 @@
 import { Link, useNavigate } from "react-router-dom";
 import { getAuthUser, logout } from "../utils/storage";
+import { useState, useEffect } from "react";
+
 export default function Navbar(){
- const user = getAuthUser();
+ const [user, setUser] = useState(null);
  const nav = useNavigate();
+
+ useEffect(() => {
+   const fetchUser = async () => {
+     setUser(await getAuthUser());
+   };
+   fetchUser();
+ }, []);
+
+ async function handleLogout() {
+   await logout();
+   nav("/login", { replace: true });
+ }
+
  return (
 <div className="navbar">
 <div className="navbar-inner">
@@ -11,11 +26,11 @@ export default function Navbar(){
 </div>
 <div className="nav-actions">
          {user && (
-<Link className="btn btn-ghost" to={user.role==="TUTOR" ? "/dashboard/tutor" : "/dashboard/student"}>
+<Link className="btn btn-ghost" to={user.user_metadata.role==="TUTOR" ? "/app/tutor" : "/app/student"}>
              Dashboard
 </Link>
          )}
-<button className="btn btn-primary" onClick={()=>{ logout(); nav("/login",{replace:true}); }}>
+<button className="btn btn-primary" onClick={handleLogout}>
            Logout
 </button>
 </div>
