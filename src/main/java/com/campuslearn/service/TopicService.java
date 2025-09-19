@@ -13,6 +13,10 @@ public class TopicService {
         this.topicRepository = topicRepository;
     }
 
+    public List<Topic> getAllTopics() {
+        return topicRepository.findAll();
+    }
+
     public String createTopic(String title, String moduleId, String status, String role) {
         // Validate role has permission to create topics
         if (!(role.equals("instructor") || role.equals("admin"))) {

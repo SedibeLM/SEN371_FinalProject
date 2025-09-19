@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { setAuthUser } from "../utils/storage";   // <-- this must exist now
+import { registerUser } from "../utils/api";
 import { useNavigate } from "react-router-dom";
 
 export default function Register(){
@@ -9,9 +9,24 @@ export default function Register(){
 
   function submit(e){
     e.preventDefault();
-    // demo registration: create a student session
-    setAuthUser({ email, role:"STUDENT", name: name || "Student" });
-    nav("/app/overview", { replace:true });
+    
+    // Basic validation
+    if (!email || !name) {
+      alert("Please fill in all fields");
+      return;
+    }
+    
+    // For now, just navigate to the app - you'll need to implement proper auth
+    console.log("Registering user:", { email, name });
+    
+    // Store user info in localStorage as a temporary solution
+    localStorage.setItem('user', JSON.stringify({ 
+      email, 
+      role: "STUDENT", 
+      name: name || "Student" 
+    }));
+    
+    nav("/app/overview", { replace: true });
   }
 
   return (
@@ -27,5 +42,6 @@ export default function Register(){
     </div>
   );
 }
+
 const input = { width:"100%", padding:"10px 12px", borderRadius:10, border:"1px solid #d1d5db" };
 const btn = { marginTop:14, width:"100%", padding:"10px 12px", borderRadius:10, border:"1px solid #0aa266", background:"#0aa266", color:"#fff", fontWeight:800 };

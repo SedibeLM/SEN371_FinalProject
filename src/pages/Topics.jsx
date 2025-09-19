@@ -1,7 +1,12 @@
 import { getTopics, getMaterials } from "../utils/storage";  // <-- no getModules
 
 export default function Topics(){
-  const topics = getTopics();
+  const [topics, setTopics] = useState([]);
+
+  useEffect(() => {
+    getTopics().then(setTopics);
+  }, []);
+
   return (
     <div>
       <h1>Topics</h1>
@@ -13,9 +18,6 @@ export default function Topics(){
               <span style={{opacity:.6}}>SEN371</span>
             </div>
             <div style={{color:"#6b7280", marginBottom:10}}>{t.description}</div>
-            <div style={{fontSize:13,color:"#6b7280"}}>
-              Materials: {getMaterials(t.id).length}
-            </div>
           </div>
         ))}
       </div>

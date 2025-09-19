@@ -7,12 +7,15 @@ export default function Login(){
   const [password,setPassword] = useState("");
   const nav = useNavigate();
 
-  function submit(e){
+  async function submit(e){
     e.preventDefault();
-    const ok = loginUser(email,password);
-    if(!ok) return alert("Invalid credentials");
-    // role-based redirect happens inside app via side menu; go to overview:
-    nav("/app/overview", { replace:true });
+    try {
+      await loginUser(email,password);
+      // role-based redirect happens inside app via side menu; go to overview:
+      nav("/app/overview", { replace:true });
+    } catch (error) {
+      alert("Invalid credentials");
+    }
   }
 
   return (
